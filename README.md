@@ -3,6 +3,14 @@
 A relational database of cross-sections and rate coefficients for atomic
 processes and alike.
 
+## About the name
+
+CroXe's name, pronounced \\'kroze\\, is derived from the homonym word in many
+Veneto's dialects: croxe, \\'kroze\\, which means cross. I really liked the
+graphosymbolism of a cross (the X in CroXe) in the middle of a word that means
+cross. Additonally, \\'kroze\\ really sound like a contraction and truncation of
+cross-section, thus forming a nice metonymy.
+
 ## Why CroXe
 
 Though similar databases already exist, I decided to develop CroXe because none
