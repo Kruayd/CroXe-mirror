@@ -3,8 +3,6 @@
 A relational database of cross-sections and rate coefficients for atomic
 processes and alike.
 
----
-
 ## Why CroXe
 
 Though similar databases already exist, I decided to develop CroXe because none
@@ -264,8 +262,6 @@ GRANT SELECT ON CroXe.* TO 'croxe-guest'@'%';
 > only from the local network, or from one of its subnets, note that you can
 > also use netmasks to match a range of IP addresses, as reported [in the
 > official docs](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/create-user#host-name-component)
-
----
 
 ## Contribuiting
 
