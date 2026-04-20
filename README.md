@@ -20,7 +20,7 @@ and not working properly anymore, ADAS is closed source and OPEN-ADAS is as
 
 When I first conceived CroXe, I wanted it to be completely open source, based on
 standard and consolidated technologies, versionable with git and, most of all, I
-didn't want it hardcoded into any specific programming language library, or
+didn't want it hard-coded into any specific programming language library, or
 module, but, instead, it should have been divided into a true database and the
 various programming languages APIs.
 
@@ -312,7 +312,7 @@ Right now, CroXe consists of six tables and one view:
     beam-on-target processes stored in this database, in a more human-readable
     format.
 
-## Contribuiting
+## Contributing
 
 Right now you can suggest changes through
 [e-mail](mailto:luca.cinnirella@protonmail.com), but soon some more standard
