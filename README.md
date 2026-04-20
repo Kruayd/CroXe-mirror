@@ -271,6 +271,47 @@ GRANT SELECT ON CroXe.* TO 'croxe-guest'@'%';
 > also use netmasks to match a range of IP addresses, as reported [in the
 > official docs](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/create-user#host-name-component)
 
+## Schema
+
+Right now, CroXe consists of six tables and one view:
+
+- **Tables**
+  - `species`: contains data about nuclear and atomic species, such as their
+    mass, their charge and their chemical symbol. Species are uniquely
+    identified by an auto-incremental ID (`species_id`), which is also used, in
+    columns like `isotope_of` and `excited_state_of`, to link daughter species
+    to their parent species (e.g. deuterium to protium).
+  - `sources`: contains information about the scientific sources used to
+    provide the data for all the following tables.
+  - `fit_templates`: list of all supported fit function templates, uniquely
+    identified by an ID (`template_id`) and by an uppercase tag
+    (`function_name`). The column `source_id` links the specific template to
+    the scientific source, from table `sources`, that provided the template
+    itself.
+  - `beam_processes`: list of all the available beam-on-target processes (i.e.
+    processes with a projectile and a target). Projectiles, targets and products
+    are referenced through their `species_id` from table `species`. `process_id`
+    uniquely identifies each process, while `product_velocity` tells whether the
+    product is stationary or not, with respect to the target.
+  - `beam_fit_params`: list of all available fits for beam-on-target processes,
+    each uniquely identified by the `parameters_id` ID and represented by a set
+    of parameters that describes the fit quality and its domain. Column
+    `template_id` is used to link the fit with its template function in table
+    `fit_templates`. Column `process_id`, instead, links the fit with the
+    process, in table `beam_processes`, of which it approximates the
+    cross-section.
+  - `coefficients`: table of all coefficients necessary to reproduce any
+    fit stored in this database. Every coefficient is described by its value
+    (`coeff_value`) and order (`coeff_order`), and it's uniquely identified by
+    `coefficient_id`. `fit_params_table` states to which fit parameters' table
+    the coefficient belongs to (e.g. `beam_fit_params`), while `parameters_id`
+    links it to a specific fit/parameters set in that table. `coeff_order`
+    starts from 0.
+- **Views**
+  - `beam_on_target_processes_list`: a comprehensive view of all the
+    beam-on-target processes stored in this database, in a more human-readable
+    format.
+
 ## Contribuiting
 
 Right now you can suggest changes through
