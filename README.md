@@ -3,6 +3,26 @@
 A relational database of cross-sections and rate coefficients for atomic
 processes and alike.
 
+## Table of contents
+
+<!-- toc -->
+
+- [About the name](#about-the-name)
+- [Why CroXe](#why-croxe)
+- [Installation](#installation)
+  - [Installing MariaDB](#installing-mariadb)
+    - [Installing MariaDB on Linux](#installing-mariadb-on-linux)
+    - [Installing MariaDB on macOS](#installing-mariadb-on-macos)
+    - [Installing MariaDB on Windows](#installing-mariadb-on-windows)
+  - [Adding a MariaDB CroXe admin](#adding-a-mariadb-croxe-admin)
+  - [Importing CroXe](#importing-croxe)
+  - [Adding a MariaDB CroXe guest](#adding-a-mariadb-croxe-guest)
+- [Schema](#schema)
+- [Contributing](#contributing)
+- [License](#license)
+
+<!-- tocstop -->
+
 ## About the name
 
 CroXe's name, pronounced \\'kroze\\, is derived from the homonym word in many
