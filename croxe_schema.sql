@@ -24,6 +24,27 @@ CREATE DATABASE /*!32312 IF NOT EXISTS*/ `CroXe` /*!40100 DEFAULT CHARACTER SET 
 USE `CroXe`;
 
 --
+-- Table structure for table `beam_fit_coefficients`
+--
+
+DROP TABLE IF EXISTS `beam_fit_coefficients`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `beam_fit_coefficients` (
+  `projectile` varchar(10) NOT NULL,
+  `target` varchar(10) NOT NULL,
+  `product` varchar(10) NOT NULL,
+  `product_frame` enum('projectile','target') NOT NULL DEFAULT 'projectile',
+  `source_tag` varchar(20) NOT NULL,
+  `fit_index` int(11) NOT NULL,
+  `coeff_order` int(11) NOT NULL COMMENT 'Position of the coefficient in the fit function (0-indexed)',
+  `coeff_value` double NOT NULL COMMENT 'Value of the coefficient',
+  PRIMARY KEY (`projectile`,`target`,`product`,`product_frame`,`source_tag`,`fit_index`,`coeff_order`),
+  CONSTRAINT `bfc_fit_fk` FOREIGN KEY (`projectile`, `target`, `product`, `product_frame`, `source_tag`, `fit_index`) REFERENCES `beam_fit_params` (`projectile`, `target`, `product`, `product_frame`, `source_tag`, `fit_index`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Fit coefficients for beam-on-target process cross-sections';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `beam_fit_params`
 --
 
@@ -31,20 +52,25 @@ DROP TABLE IF EXISTS `beam_fit_params`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `beam_fit_params` (
-  `parameters_id` int(11) NOT NULL AUTO_INCREMENT,
-  `e_min` float NOT NULL COMMENT 'Min energy (eV)',
-  `e_max` float NOT NULL COMMENT 'Max energy (eV)',
-  `rms` float DEFAULT NULL COMMENT 'Relative RMS deviation',
-  `max_deviation` float DEFAULT NULL COMMENT 'Max relative deviation',
-  `e_at_max_deviation` float DEFAULT NULL COMMENT 'Energy at max deviation (eV)',
-  `process_id` int(11) NOT NULL,
-  `template_id` int(11) NOT NULL,
-  PRIMARY KEY (`parameters_id`),
-  KEY `idx_process` (`process_id`),
-  KEY `idx_template` (`template_id`),
-  CONSTRAINT `beam_fit_params_ibfk_1` FOREIGN KEY (`process_id`) REFERENCES `beam_processes` (`process_id`),
-  CONSTRAINT `beam_fit_params_ibfk_2` FOREIGN KEY (`template_id`) REFERENCES `fit_templates` (`template_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Table of fit parameters for beam-on-target processes';
+  `projectile` varchar(10) NOT NULL COMMENT 'Symbol of the projectile species',
+  `target` varchar(10) NOT NULL COMMENT 'Symbol of the target species',
+  `product` varchar(10) NOT NULL COMMENT 'Symbol of the product species',
+  `product_frame` enum('projectile','target') NOT NULL DEFAULT 'projectile' COMMENT 'Reference frame of the product after the collision',
+  `source_tag` varchar(20) NOT NULL COMMENT 'Source that provides this fit',
+  `fit_index` int(11) NOT NULL DEFAULT 1 COMMENT 'Ordering index for multiple fits from the same source on the same process (starts at 1)',
+  `function_name` varchar(15) NOT NULL COMMENT 'Fit function template used',
+  `e_min` double NOT NULL COMMENT 'Lower energy boundary of fit validity (eV)',
+  `e_max` double NOT NULL COMMENT 'Upper energy boundary of fit validity (eV)',
+  `rms` double DEFAULT NULL COMMENT 'Relative RMS deviation of the fit',
+  `max_deviation` double DEFAULT NULL COMMENT 'Maximum relative deviation of the fit',
+  `e_at_max_deviation` double DEFAULT NULL COMMENT 'Energy at maximum relative deviation (eV)',
+  PRIMARY KEY (`projectile`,`target`,`product`,`product_frame`,`source_tag`,`fit_index`),
+  KEY `bfp_function_fk` (`function_name`),
+  KEY `bfp_source_function_fk` (`source_tag`,`function_name`),
+  CONSTRAINT `bfp_function_fk` FOREIGN KEY (`function_name`) REFERENCES `fit_templates` (`function_name`),
+  CONSTRAINT `bfp_process_fk` FOREIGN KEY (`projectile`, `target`, `product`, `product_frame`) REFERENCES `beam_processes` (`projectile`, `target`, `product`, `product_frame`),
+  CONSTRAINT `bfp_source_function_fk` FOREIGN KEY (`source_tag`, `function_name`) REFERENCES `fit_templates` (`source_tag`, `function_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Fit parameters for beam-on-target process cross-sections';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -56,18 +82,23 @@ DROP TABLE IF EXISTS `beam_on_target_processes_list`;
 SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 /*!50001 CREATE VIEW `beam_on_target_processes_list` AS SELECT
- 1 AS `parameters set ID`,
-  1 AS `projectile`,
+ 1 AS `projectile`,
   1 AS `target`,
   1 AS `product`,
-  1 AS `fit function template`,
-  1 AS `E lower boundary (eV)`,
-  1 AS `E upper boundary (eV)`,
+  1 AS `product frame`,
+  1 AS `interaction`,
+  1 AS `source`,
+  1 AS `fit index`,
+  1 AS `fit function`,
+  1 AS `E min (eV)`,
+  1 AS `E max (eV)`,
   1 AS `coefficients`,
   1 AS `relative RMS`,
+  1 AS `max deviation`,
   1 AS `author`,
   1 AS `title`,
-  1 AS `year` */;
+  1 AS `year`,
+  1 AS `doi` */;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -78,39 +109,18 @@ DROP TABLE IF EXISTS `beam_processes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `beam_processes` (
-  `process_id` int(11) NOT NULL AUTO_INCREMENT,
-  `projectile_id` int(11) NOT NULL COMMENT 'ID of the projectile species',
-  `target_id` int(11) NOT NULL COMMENT 'ID of the target species',
-  `product_id` int(11) NOT NULL COMMENT 'ID of the product species',
-  `product_velocity` float DEFAULT 1 COMMENT 'Relative velocity of the product (1 = same as projectile, 0 = same as target)',
-  PRIMARY KEY (`process_id`),
-  UNIQUE KEY `idx_process` (`projectile_id`,`target_id`,`product_id`),
-  KEY `idx_projectile` (`projectile_id`),
-  KEY `idx_target` (`target_id`),
-  KEY `idx_product` (`product_id`),
-  CONSTRAINT `beam_processes_ibfk_1` FOREIGN KEY (`projectile_id`) REFERENCES `species` (`species_id`),
-  CONSTRAINT `beam_processes_ibfk_2` FOREIGN KEY (`target_id`) REFERENCES `species` (`species_id`),
-  CONSTRAINT `beam_processes_ibfk_3` FOREIGN KEY (`product_id`) REFERENCES `species` (`species_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Table of beam-on-target collision processes (e.g., H + H2 → H-)';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `coefficients`
---
-
-DROP TABLE IF EXISTS `coefficients`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `coefficients` (
-  `coefficient_id` int(11) NOT NULL AUTO_INCREMENT,
-  `fit_params_table` enum('beam_fit_params') NOT NULL COMMENT 'Name of the fit parameters table to refer (e.g. beam_fit_params, etc.)',
-  `parameters_id` int(11) NOT NULL COMMENT 'ID of the parameters set in the corresponding fit parameters table',
-  `coeff_order` int(11) NOT NULL COMMENT 'Order of the coefficient in the fit function (0 = first coefficient)',
-  `coeff_value` float NOT NULL COMMENT 'Value of the coefficient',
-  PRIMARY KEY (`coefficient_id`),
-  UNIQUE KEY `idx_coeff` (`fit_params_table`,`parameters_id`,`coeff_order`),
-  KEY `idx_fit` (`fit_params_table`,`parameters_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=512 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Table storing fit coefficients for all fit parameters tables (e.g. beam_fit_params)';
+  `projectile` varchar(10) NOT NULL COMMENT 'Symbol of the projectile species',
+  `target` varchar(10) NOT NULL COMMENT 'Symbol of the target species',
+  `product` varchar(10) NOT NULL COMMENT 'Symbol of the product species',
+  `product_frame` enum('projectile','target') NOT NULL DEFAULT 'projectile' COMMENT 'Reference frame of the product after the collision (projectile = moves with projectile, target = moves with target)',
+  `interaction` enum('electromagnetic','strong') NOT NULL COMMENT 'Fundamental interaction governing the process',
+  PRIMARY KEY (`projectile`,`target`,`product`,`product_frame`),
+  KEY `beam_processes_target_fk` (`target`),
+  KEY `beam_processes_product_fk` (`product`),
+  CONSTRAINT `beam_processes_product_fk` FOREIGN KEY (`product`) REFERENCES `species` (`symbol`),
+  CONSTRAINT `beam_processes_projectile_fk` FOREIGN KEY (`projectile`) REFERENCES `species` (`symbol`),
+  CONSTRAINT `beam_processes_target_fk` FOREIGN KEY (`target`) REFERENCES `species` (`symbol`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Beam-on-target collision processes (e.g. H+ + H2 → H)';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -121,15 +131,13 @@ DROP TABLE IF EXISTS `fit_templates`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `fit_templates` (
-  `template_id` int(11) NOT NULL AUTO_INCREMENT,
-  `function_name` varchar(10) NOT NULL COMMENT 'Short code for the fit function (e.g., CHEB, TAB2_1_5)',
-  `notes` text DEFAULT NULL COMMENT 'Notes about the fit function template (e.g., units conversion)',
-  `source_id` int(11) DEFAULT NULL COMMENT 'Reference to the source (NULL if generic)',
-  PRIMARY KEY (`template_id`),
-  UNIQUE KEY `idx_function_name` (`function_name`),
-  KEY `source_id` (`source_id`),
-  CONSTRAINT `fit_templates_ibfk_1` FOREIGN KEY (`source_id`) REFERENCES `sources` (`source_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Table of reusable fit function templates';
+  `function_name` varchar(15) NOT NULL COMMENT 'Short unique code for the fit function (e.g. CHEB, TAB2_1_3)',
+  `notes` text DEFAULT NULL COMMENT 'Notes about the template (e.g. unit conversions applied to stored data)',
+  `source_tag` varchar(20) DEFAULT NULL COMMENT 'Source that defined this template (NULL if generic)',
+  PRIMARY KEY (`function_name`),
+  UNIQUE KEY `idx_source_function` (`source_tag`,`function_name`),
+  CONSTRAINT `fit_templates_source_fk` FOREIGN KEY (`source_tag`) REFERENCES `sources` (`source_tag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Reusable fit function templates';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -140,17 +148,17 @@ DROP TABLE IF EXISTS `sources`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `sources` (
-  `source_id` int(11) NOT NULL AUTO_INCREMENT,
-  `first_author` varchar(100) NOT NULL,
+  `source_tag` varchar(20) NOT NULL COMMENT 'Short unique identifier for the source (e.g. Barnett1990)',
+  `first_author` varchar(100) NOT NULL COMMENT 'First author of the source',
   `et_al` tinyint(1) DEFAULT 0 COMMENT 'TRUE if there are additional authors',
-  `title` text NOT NULL,
+  `title` text NOT NULL COMMENT 'Full title of the source',
   `year` year(4) DEFAULT NULL,
   `publisher` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`source_id`),
-  UNIQUE KEY `title` (`title`) USING HASH,
-  UNIQUE KEY `idx_title` (`title`) USING HASH,
-  UNIQUE KEY `idx_author_title` (`first_author`,`title`) USING HASH
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Table of bibliographic sources for cross-section data';
+  `doi` varchar(200) DEFAULT NULL COMMENT 'Digital Object Identifier',
+  PRIMARY KEY (`source_tag`),
+  UNIQUE KEY `idx_title` (`title`(255)),
+  UNIQUE KEY `idx_doi` (`doi`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Bibliographic sources for cross-section data';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -161,22 +169,20 @@ DROP TABLE IF EXISTS `species`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `species` (
-  `species_id` int(11) NOT NULL AUTO_INCREMENT,
-  `symbol` varchar(50) NOT NULL,
-  `mass` float NOT NULL COMMENT 'Atomic/molecular mass in amu (rounded to 3 significant digits)',
-  `charge` int(11) NOT NULL COMMENT 'Electric charge in units of the elementary charge (e.g. 0, +1, -1)',
-  `isotope_of` int(11) DEFAULT NULL COMMENT 'ID of the parent species (NULL if not an isotope)',
-  `excited_state_of` int(11) DEFAULT NULL COMMENT 'ID of the species in the ground state (NULL if not excited)',
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`species_id`),
-  UNIQUE KEY `symbol` (`symbol`),
-  UNIQUE KEY `idx_symbol` (`symbol`),
-  KEY `idx_isotope` (`isotope_of`),
-  KEY `idx_excited_state` (`excited_state_of`),
-  CONSTRAINT `species_ibfk_1` FOREIGN KEY (`isotope_of`) REFERENCES `species` (`species_id`),
-  CONSTRAINT `species_ibfk_2` FOREIGN KEY (`excited_state_of`) REFERENCES `species` (`species_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Table of atomic/molecular species, isotopes, and excited states';
+  `symbol` varchar(10) NOT NULL COMMENT 'Chemical symbol (e.g. H, H+, H2, e-)',
+  `mass` double NOT NULL COMMENT 'Atomic/molecular mass in amu',
+  `charge` int(11) NOT NULL COMMENT 'Electric charge in units of the elementary charge',
+  `isotope_of` varchar(10) DEFAULT NULL COMMENT 'Symbol of the parent species if this is an isotope',
+  `excited_state_of` varchar(10) DEFAULT NULL COMMENT 'Symbol of the ground state species if this is an excited state',
+  `ion_of` varchar(10) DEFAULT NULL COMMENT 'Symbol of the neutral species this ion is derived from (NULL if neutral or no stable neutral counterpart exists)',
+  PRIMARY KEY (`symbol`),
+  KEY `species_isotope_fk` (`isotope_of`),
+  KEY `species_excited_state_fk` (`excited_state_of`),
+  KEY `species_ion_fk` (`ion_of`),
+  CONSTRAINT `species_excited_state_fk` FOREIGN KEY (`excited_state_of`) REFERENCES `species` (`symbol`),
+  CONSTRAINT `species_ion_fk` FOREIGN KEY (`ion_of`) REFERENCES `species` (`symbol`),
+  CONSTRAINT `species_isotope_fk` FOREIGN KEY (`isotope_of`) REFERENCES `species` (`symbol`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci COMMENT='Atomic and molecular species, isotopes, and excited states';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -197,8 +203,8 @@ USE `CroXe`;
 /*!50001 SET character_set_results     = utf8mb3 */;
 /*!50001 SET collation_connection      = utf8mb3_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`kruayd`@`localhost` SQL SECURITY DEFINER */
-/*!50001 VIEW `beam_on_target_processes_list` AS select `bfp`.`parameters_id` AS `parameters set ID`,`s1`.`symbol` AS `projectile`,`s2`.`symbol` AS `target`,`s3`.`symbol` AS `product`,`ft`.`function_name` AS `fit function template`,`bfp`.`e_min` AS `E lower boundary (eV)`,`bfp`.`e_max` AS `E upper boundary (eV)`,group_concat(`c`.`coeff_value` order by `c`.`coeff_order` ASC separator ', ') AS `coefficients`,`bfp`.`rms` AS `relative RMS`,`sr`.`first_author` AS `author`,`sr`.`title` AS `title`,`sr`.`year` AS `year` from (((((((`beam_fit_params` `bfp` join `beam_processes` `bp` on(`bfp`.`process_id` = `bp`.`process_id`)) join `species` `s1` on(`bp`.`projectile_id` = `s1`.`species_id`)) join `species` `s2` on(`bp`.`target_id` = `s2`.`species_id`)) join `species` `s3` on(`bp`.`product_id` = `s3`.`species_id`)) join `fit_templates` `ft` on(`bfp`.`template_id` = `ft`.`template_id`)) join `sources` `sr` on(`ft`.`source_id` = `sr`.`source_id`)) left join `coefficients` `c` on(`c`.`fit_params_table` = 'beam_fit_params' and `c`.`parameters_id` = `bfp`.`parameters_id`)) group by `bfp`.`parameters_id` */;
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `beam_on_target_processes_list` AS select `bfp`.`projectile` AS `projectile`,`bfp`.`target` AS `target`,`bfp`.`product` AS `product`,`bfp`.`product_frame` AS `product frame`,`bp`.`interaction` AS `interaction`,`bfp`.`source_tag` AS `source`,`bfp`.`fit_index` AS `fit index`,`bfp`.`function_name` AS `fit function`,`bfp`.`e_min` AS `E min (eV)`,`bfp`.`e_max` AS `E max (eV)`,group_concat(`c`.`coeff_value` order by `c`.`coeff_order` ASC separator ', ') AS `coefficients`,`bfp`.`rms` AS `relative RMS`,`bfp`.`max_deviation` AS `max deviation`,`s`.`first_author` AS `author`,`s`.`title` AS `title`,`s`.`year` AS `year`,`s`.`doi` AS `doi` from (((`beam_fit_params` `bfp` join `beam_processes` `bp` on(`bfp`.`projectile` = `bp`.`projectile` and `bfp`.`target` = `bp`.`target` and `bfp`.`product` = `bp`.`product` and `bfp`.`product_frame` = `bp`.`product_frame`)) join `sources` `s` on(`bfp`.`source_tag` = `s`.`source_tag`)) left join `beam_fit_coefficients` `c` on(`c`.`projectile` = `bfp`.`projectile` and `c`.`target` = `bfp`.`target` and `c`.`product` = `bfp`.`product` and `c`.`product_frame` = `bfp`.`product_frame` and `c`.`source_tag` = `bfp`.`source_tag` and `c`.`fit_index` = `bfp`.`fit_index`)) group by `bfp`.`projectile`,`bfp`.`target`,`bfp`.`product`,`bfp`.`product_frame`,`bfp`.`source_tag`,`bfp`.`fit_index` */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
@@ -212,4 +218,4 @@ USE `CroXe`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-18 14:53:14
+-- Dump completed on 2026-05-05 16:31:26
