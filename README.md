@@ -246,17 +246,11 @@ GRANT ALL PRIVILEGES ON CroXe.* TO 'croxe-admin'@'localhost';
 
 ### Importing CroXe
 
-Finally, it is time to import CroXe! You can choose whether to import the full
-database, just the schema, or just the data.
+Finally, it is time to import CroXe! You can choose whether to import just the
+schema, just the data or both
 
 Assuming that the `croxe-admin` user is authenticated by password and your shell
-working directory is this git repo, to import the full database, run:
-
-```bash
-mariadb -u croxe-admin -p < croxe_full_dump.sql
-```
-
-To import just the schema, instead, run:
+working directory is this git repo, to import just the schema, run:
 
 ```bash
 mariadb -u croxe-admin -p < croxe_schema.sql
@@ -268,6 +262,8 @@ then you can run:
 ```bash
 mariadb -u croxe-admin -p CroXe < croxe_data.sql
 ```
+
+To do both, just run the two commands listed above in the correct order.
 
 ### Adding a MariaDB CroXe guest
 
@@ -298,39 +294,44 @@ Right now, CroXe consists of six tables and one view:
 - **Tables**
   - `species`: contains data about nuclear and atomic species, such as their
     mass, their charge and their chemical symbol. Species are uniquely
-    identified by an auto-incremental ID (`species_id`), which is also used, in
-    columns like `isotope_of` and `excited_state_of`, to link daughter species
-    to their parent species (e.g. deuterium to protium).
+    identified by their chemical symbol (`symbol`), which is also used, in
+    columns like `isotope_of`, `excited_state_of` and `ion_of`, to link daughter
+    species to their parent species (e.g. deuterium to protium).
   - `sources`: contains information about the scientific sources used to
-    provide the data for all the following tables.
+    provide the data for all the following tables. Sources are uniquely
+    identified by the column `source_tag`, which is built by combining the first
+    author name with the publication date (e.g. Barnett1990), in a sort of
+    APA-like citation style.
   - `fit_templates`: list of all supported fit function templates, uniquely
-    identified by an ID (`template_id`) and by an uppercase tag
-    (`function_name`). The column `source_id` links the specific template to
-    the scientific source, from table `sources`, that provided the template
-    itself.
+    identified by an uppercase tag (`function_name`). The column `source_tag`
+    links the specific template to the scientific source, from table `sources`,
+    that provided the template itself.
   - `beam_processes`: list of all the available beam-on-target processes (i.e.
     processes with a projectile and a target). Projectiles, targets and products
-    are referenced through their `species_id` from table `species`. `process_id`
-    uniquely identifies each process, while `product_velocity` tells whether the
-    product is stationary or not, with respect to the target.
+    are referenced through their `symbol` from table `species`, while
+    `product_frame` tells whether the product is stationary or not.
+    The combination of `projectile`, `target`, `product` and `product_frame`
+    uniquely identifies each process. Information about the governing
+    interaction of the process is contained in the `interaction` column.
   - `beam_fit_params`: list of all available fits for beam-on-target processes,
-    each uniquely identified by the `parameters_id` ID and represented by a set
-    of parameters that describes the fit quality and its domain. Column
-    `template_id` is used to link the fit with its template function in table
-    `fit_templates`. Column `process_id`, instead, links the fit with the
-    process, in table `beam_processes`, of which it approximates the
-    cross-section.
-  - `coefficients`: table of all coefficients necessary to reproduce any
-    fit stored in this database. Every coefficient is described by its value
-    (`coeff_value`) and order (`coeff_order`), and it's uniquely identified by
-    `coefficient_id`. `fit_params_table` states to which fit parameters' table
-    the coefficient belongs to (e.g. `beam_fit_params`), while `parameters_id`
-    links it to a specific fit/parameters set in that table. `coeff_order`
-    starts from 0.
+    each uniquely identified by the combination of `projectile`, `target`,
+    `product`, `product_frame`, `source_tag` and `fit_index`. Every row contains
+    a set of parameters that describes the fit quality and its domain. Column
+    `function_name` is used to link the fit with its template function in table
+    `fit_templates`. The quadruple formed by `projectile`, `target`, `product`
+    and `product_frame`, instead, links the fit with the process, in table
+    `beam_processes`, of which it approximates the cross-section.
+  - `beam_fit_coefficients`: table of all coefficients necessary to reproduce
+    any fit of a beam-on-target process stored in this database. Every
+    coefficient is described by its value (`coeff_value`) and order
+    (`coeff_order`), and it's uniquely identified by the combination of
+    `projectile`, `target`, `product`, `product_frame`, `source_tag`,
+    `fit_index` and `coeff_order`. The same combination, without `coeff_order`,
+    links the row to a specific fit/parameters set in table `beam_fit_params`.
+    `coeff_order` starts from 0.
 - **Views**
   - `beam_on_target_processes_list`: a comprehensive view of all the
-    beam-on-target processes stored in this database, in a more human-readable
-    format.
+    beam-on-target processes stored in this database, in a more compact format.
 
 ## Contributing
 
