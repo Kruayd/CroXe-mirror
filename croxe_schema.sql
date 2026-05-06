@@ -19,6 +19,8 @@
 -- Current Database: `CroXe`
 --
 
+/*!40000 DROP DATABASE IF EXISTS `CroXe`*/;
+
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ `CroXe` /*!40100 DEFAULT CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci */;
 
 USE `CroXe`;
@@ -218,4 +220,4 @@ USE `CroXe`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-05 16:31:26
+-- Dump completed on 2026-05-06 16:46:26
