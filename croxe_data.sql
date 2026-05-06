@@ -20,8 +20,7 @@
 
 LOCK TABLES `beam_fit_coefficients` WRITE;
 /*!40000 ALTER TABLE `beam_fit_coefficients` DISABLE KEYS */;
-INSERT INTO `beam_fit_coefficients` VALUES
-('H','H2','H+','projectile','Barnett1990',1,0,-79.0892),
+INSERT INTO `beam_fit_coefficients` (`projectile`, `target`, `product`, `product_frame`, `source_tag`, `fit_index`, `coeff_order`, `coeff_value`) VALUES ('H','H2','H+','projectile','Barnett1990',1,0,-79.0892),
 ('H','H2','H+','projectile','Barnett1990',1,1,0.346403),
 ('H','H2','H+','projectile','Barnett1990',1,2,-3.04496),
 ('H','H2','H+','projectile','Barnett1990',1,3,0.50849),
@@ -320,8 +319,7 @@ UNLOCK TABLES;
 
 LOCK TABLES `beam_fit_params` WRITE;
 /*!40000 ALTER TABLE `beam_fit_params` DISABLE KEYS */;
-INSERT INTO `beam_fit_params` VALUES
-('H','H2','H+','projectile','Barnett1990',1,'CHEB',61,20000000,0.107,0.298,10000),
+INSERT INTO `beam_fit_params` (`projectile`, `target`, `product`, `product_frame`, `source_tag`, `fit_index`, `function_name`, `e_min`, `e_max`, `rms`, `max_deviation`, `e_at_max_deviation`) VALUES ('H','H2','H+','projectile','Barnett1990',1,'CHEB',61,20000000,0.107,0.298,10000),
 ('H','H2','H+','projectile','Tabata2018',1,'TAB2_1_2',56.2,112000,0.047,0.2,75),
 ('H','H2','H-','projectile','Barnett1990',1,'CHEB',40,460000,0.095,0.262,1000),
 ('H','H2','H-','projectile','Tabata2018',1,'TAB2_1_13',23.7,91100,0.036,0.088,1000),
@@ -365,8 +363,7 @@ UNLOCK TABLES;
 
 LOCK TABLES `beam_processes` WRITE;
 /*!40000 ALTER TABLE `beam_processes` DISABLE KEYS */;
-INSERT INTO `beam_processes` VALUES
-('H','H2','H+','projectile','electromagnetic'),
+INSERT INTO `beam_processes` (`projectile`, `target`, `product`, `product_frame`, `interaction`) VALUES ('H','H2','H+','projectile','electromagnetic'),
 ('H','H2','H-','projectile','electromagnetic'),
 ('H+','H2','H','projectile','electromagnetic'),
 ('H+','H2','H-','projectile','electromagnetic'),
@@ -394,8 +391,7 @@ UNLOCK TABLES;
 
 LOCK TABLES `fit_templates` WRITE;
 /*!40000 ALTER TABLE `fit_templates` DISABLE KEYS */;
-INSERT INTO `fit_templates` VALUES
-('CHEB','Barnett uses eV/amu as the energy unit of the projectile. In this database energy data are stored already converted to eV.','Barnett1990'),
+INSERT INTO `fit_templates` (`function_name`, `notes`, `source_tag`) VALUES ('CHEB','Barnett uses eV/amu as the energy unit of the projectile. In this database energy data are stored already converted to eV.','Barnett1990'),
 ('TAB2_1_1','Tabata uses keV as the energy unit. In this database energy data are stored already converted to eV.','Tabata2018'),
 ('TAB2_1_10','Tabata uses keV as the energy unit. In this database energy data are stored already converted to eV.','Tabata2018'),
 ('TAB2_1_11','Tabata uses keV as the energy unit. In this database energy data are stored already converted to eV.','Tabata2018'),
@@ -419,8 +415,7 @@ UNLOCK TABLES;
 
 LOCK TABLES `sources` WRITE;
 /*!40000 ALTER TABLE `sources` DISABLE KEYS */;
-INSERT INTO `sources` VALUES
-('Barnett1990','C. F. Barnett',0,'Atomic Data for Fusion Volume 1: Collisions of H, H2, He and Li Atoms and Ions with Atoms and Molecules',1990,'Controlled Fusion Atomic Data Center',NULL),
+INSERT INTO `sources` (`source_tag`, `first_author`, `et_al`, `title`, `year`, `publisher`, `doi`) VALUES ('Barnett1990','C. F. Barnett',0,'Atomic Data for Fusion Volume 1: Collisions of H, H2, He and Li Atoms and Ions with Atoms and Molecules',1990,'Controlled Fusion Atomic Data Center',NULL),
 ('Tabata2018','T. Tabata',0,'The Collected Works of Tatsuo Tabata Volume 17: Atomic and Molecular Collision Cross Sections (2)',2018,'IDEA',NULL);
 /*!40000 ALTER TABLE `sources` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -431,8 +426,7 @@ UNLOCK TABLES;
 
 LOCK TABLES `species` WRITE;
 /*!40000 ALTER TABLE `species` DISABLE KEYS */;
-INSERT INTO `species` VALUES
-('e-',0.000549,-1,NULL,NULL,NULL),
+INSERT INTO `species` (`symbol`, `mass`, `charge`, `isotope_of`, `excited_state_of`, `ion_of`) VALUES ('e-',0.000549,-1,NULL,NULL,NULL),
 ('H',1.01,0,NULL,NULL,NULL),
 ('H+',1.01,1,NULL,NULL,'H'),
 ('H-',1.01,-1,NULL,NULL,'H'),
@@ -451,4 +445,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-05 18:39:29
+-- Dump completed on 2026-05-06 16:58:34
